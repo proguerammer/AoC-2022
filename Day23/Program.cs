@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -7,6 +8,7 @@ using System.Threading.Tasks;
 
 namespace Day23
 {
+    [DebuggerDisplay("X = {X}, Y = {Y}")]
     public struct Position
     {
         public Position(int x, int y)
@@ -19,33 +21,12 @@ namespace Day23
         public int Y { get; set; }
     }
 
+    [DebuggerDisplay("X = {Location.X}, Y = {Location.Y}")]
     public class Elf
     {
         public Elf(Position location)
         {
             Location = location;
-        }
-
-        public bool IsNeighbor(Elf elf)
-        {
-            // You can't be your own neighbor
-            if (this == elf)
-            {
-                return false;
-            }
-
-            for (int x = Location.X - 1; x <= Location.X + 1; ++x)
-            {
-                for (int y = Location.Y - 1; y <= Location.Y + 1; ++y)
-                {
-                    if (x == elf.Location.X && y == elf.Location.Y)
-                    {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
         }
 
         public Position Location { get; set; }
@@ -100,18 +81,48 @@ namespace Day23
             }
         }
 
-        static void Part1()
+        static List<Elf> FindNeighbors(Dictionary<Position, Elf> elvesByLocation, Elf elf)
+        {
+            var neighbors = new List<Elf>();
+
+            for (int x = elf.Location.X - 1; x <= elf.Location.X + 1; ++x)
+            {
+                for (int y = elf.Location.Y - 1; y <= elf.Location.Y + 1; ++y)
+                {
+                    if (x != elf.Location.X || y != elf.Location.Y)
+                    {
+                        Position p = new Position(x, y);
+                        if (elvesByLocation.ContainsKey(p))
+                        {
+                            neighbors.Add(elvesByLocation[p]);
+                        }
+                    }
+                }
+            }
+
+            return neighbors;
+        }
+
+        static void Simulate()
         {
             var elves = InitializeElves(lines);
             var directions = new Queue<int>(new int[] { North, South, West, East });
 
             var proposedMoves = new Dictionary<Position, List<Elf>>();
+            var elvesByLocation = new Dictionary<Position, Elf>();
 
-            for (int round = 0; round < 10; ++round)
+            int round = 1;
+            while (true)
             {
+                elvesByLocation.Clear();
                 foreach (var elf in elves)
                 {
-                    var neighbors = elves.Where(e => e.IsNeighbor(elf)).ToList();
+                    elvesByLocation[elf.Location] = elf;
+                }
+
+                foreach (var elf in elves)
+                {
+                    var neighbors = FindNeighbors(elvesByLocation, elf);
                     if (neighbors.Count > 0)
                     {
                         // Only move if there are neighbors
@@ -141,35 +152,46 @@ namespace Day23
                     }
                 }
 
+                if (round == 10)
+                {
+                    int north = int.MaxValue;
+                    int south = int.MinValue;
+                    int west = int.MaxValue;
+                    int east = int.MinValue;
+
+                    foreach (var elf in elves)
+                    {
+                        north = Math.Min(north, elf.Location.Y);
+                        south = Math.Max(south, elf.Location.Y);
+                        west = Math.Min(west, elf.Location.X);
+                        east = Math.Max(east, elf.Location.X);
+                    }
+
+                    int tiles = (south - north + 1) * (east - west + 1);
+
+                    Console.WriteLine("Part 1: {0}", tiles - elves.Count);
+                }
+
+                if (proposedMoves.Count == 0)
+                {
+                    Console.WriteLine("Part 2: {0}", round);
+                    break;
+                }
+
                 proposedMoves.Clear();
 
                 // Move the first direction checked to the back
                 directions.Enqueue(directions.Dequeue());
+
+                round++;
             }
-
-            int north = int.MaxValue;
-            int south = int.MinValue;
-            int west = int.MaxValue;
-            int east = int.MinValue;
-
-            foreach (var elf in elves)
-            {
-                north = Math.Min(north, elf.Location.Y);
-                south = Math.Max(south, elf.Location.Y);
-                west = Math.Min(west, elf.Location.X);
-                east = Math.Max(east, elf.Location.X);
-            }
-
-            int tiles = (south - north + 1) * (east - west + 1);
-
-            Console.WriteLine("Part 1: {0}", tiles - elves.Count);
         }
 
         static void Main(string[] args)
         {
             lines = File.ReadAllLines("Input.txt");
 
-            Part1();
+            Simulate();
         }
     }
 }
