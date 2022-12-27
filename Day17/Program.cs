@@ -165,10 +165,19 @@ namespace Day17
             return collisionTiles.Count;
         }
 
-        static void Part1(int numRocks)
+        static void Part1()
         {
-            int height = Simulate(numRocks);
+            int height = Simulate(2022);
             Console.WriteLine("Part 1: {0}", height);
+        }
+
+        static void Part2()
+        {
+            // Period repeats every 1750 rocks, starting at 491, increasing height by 2796
+            long h1 = Simulate((int)(1000000000000 % 1750));
+            long h2 = (1000000000000 / 1750) * 2796;
+
+            Console.WriteLine("Part 2: {0}", h1 + h2);
         }
 
         static void Main(string[] args)
@@ -176,7 +185,8 @@ namespace Day17
             Moves = File.ReadAllText("Input.txt");
             InitializeShapes();
 
-            Part1(2022);
+            Part1();
+            Part2();
         }
     }
 }
